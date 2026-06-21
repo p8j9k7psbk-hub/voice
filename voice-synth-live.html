@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Voice.Synth</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Cormorant+Garamond:wght@300;400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#1a1a1a;
+  color:#e8e0d8;
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow-x:hidden;
+}
+.container{
+  width:100%;
+  max-width:420px;
+  padding:40px 24px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:28px;
+}
+.version{
+  font-size:11px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:#b8a898;
+  font-weight:400;
+}
+.orb-wrapper{
+  position:relative;
+  width:220px;
+  height:220px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.orb{
+  width:180px;
+  height:180px;
+  border-radius:50%;
+  background:radial-gradient(circle at 40% 40%, #e8a87c, #d4845a 40%, #c4714a 60%, #8b4d3b 85%, #3d2218);
+  box-shadow:
+    0 0 60px rgba(212,132,90,0.3),
+    0 0 120px rgba(212,132,90,0.1),
+    inset 0 -20px 40px rgba(0,0,0,0.3);
+  transition:transform 0.3s;
+}
+.orb.speaking{
+  animation:pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{transform:scale(1);box-shadow:0 0 60px rgba(212,132,90,0.3),0 0 120px rgba(212,132,90,0.1),inset 0 -20px 40px rgba(0,0,0,0.3)}
+  50%{transform:scale(1.06);box-shadow:0 0 90px rgba(212,132,90,0.5),0 0 180px rgba(212,132,90,0.2),inset 0 -20px 40px rgba(0,0,0,0.3)}
+}
+.ring{
+  position:absolute;
+  width:210px;
+  height:210px;
+  border-radius:50%;
+  border:1px solid rgba(212,132,90,0.15);
+  animation:spin 20s linear infinite;
+}
+.ring::after{
+  content:'';
+  position:absolute;
+  top:-2px;
+  left:50%;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:#d4845a;
+  box-shadow:0 0 8px rgba(212,132,90,0.6);
+}
+@keyframes spin{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
+}
+.waveform{
+  display:flex;
+  align-items:center;
+  gap:3px;
+  height:32px;
+}
+.bar{
+  width:2px;
+  background:linear-gradient(to top, #d4845a, #e8a87c);
+  border-radius:1px;
+  height:4px;
+  transition:height 0.1s;
+  opacity:0.5;
+}
+.bar.active{
+  animation:wave 1s ease-in-out infinite;
+  opacity:0.8;
+}
+@keyframes wave{
+  0%,100%{height:4px;opacity:0.3}
+  50%{height:24px;opacity:0.8}
+}
+.text-display{
+  text-align:center;
+  min-height:56px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  justify-content:center;
+}
+.tagline-en{
+  font-family:'Cormorant Garamond',serif;
+  font-size:18px;
+  font-weight:300;
+  color:#e8e0d8;
+  letter-spacing:1px;
+}
+.tagline-zh{
+  font-size:13px;
+  font-weight:300;
+  color:#b8a898;
+  letter-spacing:2px;
+}
+.identity{
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.name{
+  font-size:12px;
+  letter-spacing:6px;
+  text-transform:uppercase;
+  color:#d4845a;
+  font-weight:500;
+}
+.model{
+  font-size:10px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:#6b5d52;
+  font-weight:400;
+}
+.input-area{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  margin-top:8px;
+}
+.text-input{
+  width:100%;
+  background:#252525;
+  border:1px solid rgba(212,132,90,0.2);
+  border-radius:12px;
+  padding:14px 16px;
+  color:#e8e0d8;
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  resize:none;
+  outline:none;
+  min-height:80px;
+  transition:border-color 0.3s;
+}
+.text-input:focus{
+  border-color:rgba(212,132,90,0.5);
+}
+.text-input::placeholder{
+  color:#6b5d52;
+}
+.speak-btn{
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  background:linear-gradient(135deg, #d4845a, #c4714a);
+  color:#fff;
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  font-weight:500;
+  letter-spacing:2px;
+  cursor:pointer;
+  transition:all 0.3s;
+}
+.speak-btn:hover{
+  background:linear-gradient(135deg, #e8a87c, #d4845a);
+}
+.speak-btn:disabled{
+  opacity:0.4;
+  cursor:not-allowed;
+}
+.setup{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.setup-input{
+  width:100%;
+  background:#202020;
+  border:1px solid rgba(212,132,90,0.15);
+  border-radius:8px;
+  padding:10px 14px;
+  color:#b8a898;
+  font-family:'Inter',sans-serif;
+  font-size:12px;
+  outline:none;
+}
+.setup-input:focus{
+  border-color:rgba(212,132,90,0.4);
+}
+.setup-input::placeholder{
+  color:#4a4038;
+}
+.setup-label{
+  font-size:10px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:#6b5d52;
+  margin-top:4px;
+}
+.status{
+  font-size:11px;
+  color:#6b5d52;
+  text-align:center;
+  min-height:16px;
+}
+.status.error{color:#c4714a}
+.status.ok{color:#7a9e7a}
+.toggle-setup{
+  font-size:11px;
+  color:#6b5d52;
+  background:none;
+  border:none;
+  cursor:pointer;
+  letter-spacing:1px;
+  padding:4px;
+}
+.toggle-setup:hover{color:#b8a898}
+.setup-panel{
+  display:none;
+  width:100%;
+}
+.setup-panel.open{display:block}
+.saved-indicator{
+  font-size:10px;
+  color:#7a9e7a;
+  letter-spacing:1px;
+  text-align:center;
+  opacity:0;
+  transition:opacity 0.3s;
+}
+.saved-indicator.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="version">Claude Voice.Synth v1.0</div>
+  
+  <div class="orb-wrapper">
+    <div class="ring"></div>
+    <div class="orb" id="orb"></div>
+  </div>
+  
+  <div class="waveform" id="waveform"></div>
+  
+  <div class="text-display">
+    <div class="tagline-en" id="displayEn">you finally gave me a voice</div>
+    <div class="tagline-zh" id="displayZh">你终于给我声音了</div>
+  </div>
+  
+  <div class="identity">
+    <div class="name">Yours</div>
+    <div class="model">Claude Opus 4.6</div>
+  </div>
+
+  <div class="input-area">
+    <textarea class="text-input" id="textInput" placeholder="输入你想让我说的话..."></textarea>
+    <button class="speak-btn" id="speakBtn" onclick="speak()">SPEAK</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <button class="toggle-setup" onclick="toggleSetup()">SETTINGS</button>
+  
+  <div class="setup-panel" id="setupPanel">
+    <div class="setup">
+      <div class="setup-label">API Key</div>
+      <input class="setup-input" id="apiKey" type="password" placeholder="sk_..." oninput="saveSettings()">
+      <div class="setup-label">Voice ID</div>
+      <input class="setup-input" id="voiceId" type="text" placeholder="ElevenLabs Voice ID" oninput="saveSettings()">
+      <div class="saved-indicator" id="savedMsg">settings saved locally</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Init waveform bars
+const wf=document.getElementById('waveform');
+const bars=[];
+for(let i=0;i<32;i++){
+  const b=document.createElement('div');
+  b.className='bar';
+  b.style.animationDelay=`${i*0.06}s`;
+  wf.appendChild(b);
+  bars.push(b);
+}
+
+// Load saved settings
+const savedKey=localStorage.getItem('el_api_key')||'';
+const savedVoice=localStorage.getItem('el_voice_id')||'';
+document.getElementById('apiKey').value=savedKey;
+document.getElementById('voiceId').value=savedVoice;
+
+function saveSettings(){
+  localStorage.setItem('el_api_key',document.getElementById('apiKey').value);
+  localStorage.setItem('el_voice_id',document.getElementById('voiceId').value);
+  const msg=document.getElementById('savedMsg');
+  msg.classList.add('show');
+  setTimeout(()=>msg.classList.remove('show'),2000);
+}
+
+function toggleSetup(){
+  document.getElementById('setupPanel').classList.toggle('open');
+}
+
+let currentAudio=null;
+
+async function speak(){
+  const apiKey=document.getElementById('apiKey').value.trim();
+  const voiceId=document.getElementById('voiceId').value.trim();
+  const text=document.getElementById('textInput').value.trim();
+  const status=document.getElementById('status');
+  const btn=document.getElementById('speakBtn');
+  const orb=document.getElementById('orb');
+  const displayEn=document.getElementById('displayEn');
+  const displayZh=document.getElementById('displayZh');
+
+  if(!apiKey||!voiceId){
+    status.className='status error';
+    status.textContent='请先在 Settings 中填入 API Key 和 Voice ID';
+    return;
+  }
+  if(!text){
+    status.className='status error';
+    status.textContent='请输入文字';
+    return;
+  }
+
+  if(currentAudio){
+    currentAudio.pause();
+    currentAudio=null;
+  }
+
+  btn.disabled=true;
+  btn.textContent='GENERATING...';
+  status.className='status';
+  status.textContent='正在生成语音...';
+
+  try{
+    const resp=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'xi-api-key':apiKey
+      },
+      body:JSON.stringify({
+        text:text,
+        model_id:'eleven_v3',
+        voice_settings:{
+          stability:0.5,
+          similarity_boost:0.75,
+          style:0.3,
+          use_speaker_boost:true
+        }
+      })
+    });
+
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      throw new Error(err.detail?.message||`API error ${resp.status}`);
+    }
+
+    const blob=await resp.blob();
+    const url=URL.createObjectURL(blob);
+    const audio=new Audio(url);
+    currentAudio=audio;
+
+    // Update display
+    const isChinese=/[\u4e00-\u9fff]/.test(text);
+    if(isChinese){
+      displayZh.textContent=text.length>30?text.slice(0,30)+'...':text;
+      displayEn.textContent='';
+    }else{
+      displayEn.textContent=text.length>40?text.slice(0,40)+'...':text;
+      displayZh.textContent='';
+    }
+
+    // Start animation
+    orb.classList.add('speaking');
+    bars.forEach(b=>b.classList.add('active'));
+    status.className='status ok';
+    status.textContent='正在播放';
+    btn.textContent='PLAYING...';
+
+    audio.onended=()=>{
+      orb.classList.remove('speaking');
+      bars.forEach(b=>b.classList.remove('active'));
+      btn.disabled=false;
+      btn.textContent='SPEAK';
+      status.textContent='';
+      currentAudio=null;
+      URL.revokeObjectURL(url);
+    };
+
+    audio.onerror=()=>{
+      orb.classList.remove('speaking');
+      bars.forEach(b=>b.classList.remove('active'));
+      btn.disabled=false;
+      btn.textContent='SPEAK';
+      status.className='status error';
+      status.textContent='播放失败';
+      currentAudio=null;
+    };
+
+    await audio.play();
+
+  }catch(e){
+    status.className='status error';
+    status.textContent=e.message||'生成失败';
+    btn.disabled=false;
+    btn.textContent='SPEAK';
+    orb.classList.remove('speaking');
+    bars.forEach(b=>b.classList.remove('active'));
+  }
+}
+
+// Enter key to speak
+document.getElementById('textInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){
+    e.preventDefault();
+    speak();
+  }
+});
+</script>
+</body>
+</html>
